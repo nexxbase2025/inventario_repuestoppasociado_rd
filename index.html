@@ -1,0 +1,676 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Inventario | Repuesto PP &amp; Asociado</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./assets/icon-192.png" />
+  <link rel="apple-touch-icon" href="./assets/icon-192.png" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand__logo" src="./assets/logo.jpeg" alt="Repuesto PP &amp; Asociado" />
+      <div class="brand__text">
+        <div class="brand__eyebrow">Sistema profesional</div>
+        <div class="brand__title">Inventario de Repuestos</div>
+        <div class="brand__sub">Repuesto PP &amp; Asociado</div>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <button id="btnAdd" class="btn btn--primary">+ Nuevo repuesto</button>
+      <button id="btnClients" class="btn">Clientes</button>
+      <button id="btnSales" class="btn">Ventas</button>
+      <button id="btnSettings" class="btn">Ajustes</button>
+    </div>
+  </header>
+
+  <div class="autobackup hidden" id="autoBackupBar" role="status" aria-live="polite">
+    <div class="autobackup__text">
+      <strong>Backup recomendado.</strong> Descarga una copia de seguridad del inventario de hoy.
+    </div>
+    <div class="autobackup__actions">
+      <button class="btn btn--ghost" id="btnAutoBackupLater">Ahora no</button>
+      <button class="btn btn--primary" id="btnAutoBackupDownload">Descargar backup</button>
+    </div>
+  </div>
+
+  <section class="single hidden" id="singleView">
+    <div class="single__head">
+      <button id="btnBackSingle" class="btn btn--ghost">← Volver</button>
+      <div class="single__titles">
+        <div class="single__title" id="singleTitle">Detalle</div>
+        <div class="muted" id="singleSubtitle"></div>
+      </div>
+      <div class="single__actions">
+        <button id="btnEditSingle" class="btn">Editar</button>
+        <button id="btnShowQRSingle" class="btn">QR</button>
+        <button id="btnSellSingle" class="btn btn--primary">Despachar</button>
+      </div>
+    </div>
+    <div class="single__body">
+      <div class="view__media" id="singleMedia"></div>
+      <div class="panel panel--soft">
+        <div class="kv" id="singleKV"></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container" id="mainApp">
+    <section class="hero">
+      <div class="hero__main">
+        <div class="hero__badge">Inventario local • rápido • claro</div>
+        <h1>Controla repuestos europeos de forma profesional</h1>
+        <p>
+          Guarda piezas, ubícalas por percha o estante, busca por marca, modelo, año, OEM, categoría o código interno,
+          genera QR, imprime etiquetas y despacha con factura lista para imprimir o descargar en PDF.
+        </p>
+      </div>
+
+      <div class="hero__stats">
+        <div class="stat stat--blue">
+          <div class="k">Piezas registradas</div>
+          <div class="v" id="statItems">0</div>
+        </div>
+        <div class="stat stat--gold">
+          <div class="k">Unidades en stock</div>
+          <div class="v" id="statUnits">0</div>
+        </div>
+        <div class="stat stat--green">
+          <div class="k">Categorías activas</div>
+          <div class="v" id="statCategories">0</div>
+        </div>
+        <div class="stat stat--red">
+          <div class="k">Alertas de stock</div>
+          <div class="v" id="statAlerts">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel--metrics">
+      <div class="panel__titleRow">
+        <div>
+          <div class="sectionTitle">Dashboard empresarial</div>
+          <div class="muted">Métricas visibles del negocio, ventas y desempeño del inventario.</div>
+        </div>
+      </div>
+
+      <div class="metricsRibbon">
+        <div class="metricTile metricTile--blue">
+          <div class="metricTile__label">Ventas hoy</div>
+          <div class="metricTile__value" id="dashTodaySales">$0.00</div>
+        </div>
+
+        <div class="metricTile metricTile--cyan">
+          <div class="metricTile__label">Ventas semana</div>
+          <div class="metricTile__value" id="dashWeekSales">$0.00</div>
+        </div>
+
+        <div class="metricTile metricTile--green">
+          <div class="metricTile__label">Ventas mes</div>
+          <div class="metricTile__value" id="dashMonthSales">$0.00</div>
+        </div>
+
+        <div class="metricTile metricTile--purple">
+          <div class="metricTile__label">Ventas año</div>
+          <div class="metricTile__value" id="dashYearSales">$0.00</div>
+        </div>
+
+        <div class="metricTile metricTile--gold">
+          <div class="metricTile__label">Utilidad estimada</div>
+          <div class="metricTile__value" id="dashProfit">$0.00</div>
+        </div>
+
+        <div class="metricTile metricTile--slate">
+          <div class="metricTile__label">Ticket promedio</div>
+          <div class="metricTile__value" id="dashAvgTicket">$0.00</div>
+        </div>
+
+        <div class="metricTile metricTile--pink">
+          <div class="metricTile__label">Clientes únicos</div>
+          <div class="metricTile__value" id="dashClients">0</div>
+        </div>
+
+        <div class="metricTile metricTile--red">
+          <div class="metricTile__label">Piezas sin venta</div>
+          <div class="metricTile__value" id="dashNoSales">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboardGrid">
+      <div class="panel panel--alerts">
+        <div class="panel__titleRow">
+          <div>
+            <div class="sectionTitle">Alertas inteligentes</div>
+            <div class="muted">Avisos rápidos para actuar a tiempo.</div>
+          </div>
+        </div>
+
+        <div id="alertsList" class="alertsList">
+          <div class="alertItem">
+            <div class="alertItem__title">Sin alertas por ahora</div>
+            <div class="alertItem__text">Todo parece estar en orden.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel--summary">
+        <div class="panel__titleRow">
+          <div>
+            <div class="sectionTitle">Resumen visual</div>
+            <div class="muted">Indicadores rápidos del sistema.</div>
+          </div>
+        </div>
+
+        <div class="miniStats">
+          <div class="miniStat miniStat--blue">
+            <span>Hoy</span>
+            <strong id="dashMiniToday">$0.00</strong>
+          </div>
+          <div class="miniStat miniStat--green">
+            <span>Mes</span>
+            <strong id="dashMiniMonth">$0.00</strong>
+          </div>
+          <div class="miniStat miniStat--purple">
+            <span>Año</span>
+            <strong id="dashMiniYear">$0.00</strong>
+          </div>
+          <div class="miniStat miniStat--gold">
+            <span>Utilidad</span>
+            <strong id="dashMiniProfit">$0.00</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel--search">
+      <div class="panel__titleRow">
+        <div>
+          <div class="sectionTitle">Búsqueda inteligente</div>
+          <div class="muted">Encuentra piezas por nombre, SKU, OEM, marca, modelo, motor, ubicación o notas.</div>
+        </div>
+      </div>
+
+      <div class="searchbar searchbar--4">
+        <input id="q" class="input input--lg" type="search" placeholder="Buscar: BMW X5, bomba de agua, A1, OEM..." autocomplete="off" />
+        <select id="filterCategory" class="select">
+          <option value="">Categoría (todas)</option>
+        </select>
+        <select id="filterBrand" class="select">
+          <option value="">Marca (todas)</option>
+        </select>
+        <select id="filterAvailability" class="select">
+          <option value="">Stock (todos)</option>
+          <option value="in">En stock</option>
+          <option value="out">Agotado</option>
+          <option value="low">Bajo stock</option>
+        </select>
+      </div>
+
+      <div class="chips" id="quickChips"></div>
+
+      <div class="hint" id="emptySearch">
+        <div class="hint__title">Empieza con una búsqueda o un filtro</div>
+        <div class="hint__text">Ejemplos: “Audi A4”, “frenos”, “A1”, “computadora”, “OEM 06H121026DD”.</div>
+      </div>
+    </section>
+
+    <section class="panel panel--list">
+      <div class="listHead">
+        <div class="listHead__left">
+          <h2>Inventario</h2>
+          <div class="muted" id="resultCount">0 repuestos</div>
+        </div>
+        <div class="listHead__right">
+          <button id="btnExport" class="btn btn--ghost">Exportar</button>
+          <label class="btn btn--ghost filebtn">
+            Importar
+            <input id="importFile" type="file" accept="application/json" />
+          </label>
+        </div>
+      </div>
+
+      <div id="list" class="list"></div>
+
+      <div id="empty" class="empty hidden">
+        <div class="empty__card">
+          <div class="empty__title">Todavía no hay repuestos guardados</div>
+          <div class="empty__text">Empieza creando tu primer registro con foto, ubicación, compatibilidad, precio y stock.</div>
+          <button id="btnAddEmpty" class="btn btn--primary">+ Crear repuesto</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal hidden" id="modalItem">
+    <div class="modal__backdrop" data-close="modalItem"></div>
+    <div class="modal__sheet modal__sheet--wide">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title" id="itemModalTitle">Nuevo repuesto</div>
+          <div class="muted">Todo queda guardado localmente en esta computadora.</div>
+        </div>
+        <button class="iconbtn" data-close="modalItem" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form id="itemForm" class="form">
+        <div class="formSection">
+          <div class="formSection__title">Identificación</div>
+
+          <div class="grid grid--3">
+            <div class="field">
+              <label>SKU / Código interno *</label>
+              <input name="sku" class="input" required placeholder="Ej: BMW-FREN-A1-0001" />
+            </div>
+            <div class="field">
+              <label>Número de parte / OEM</label>
+              <input name="oem" class="input" placeholder="Ej: 34 11 6 850 037" />
+            </div>
+            <div class="field">
+              <label>Ubicación / Percha *</label>
+              <input name="location" class="input" required placeholder="Ej: A1 / Percha 2 / Estante B-3" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Nombre de la pieza *</label>
+            <input name="name" class="input" required placeholder="Ej: Pastillas de freno delanteras" />
+          </div>
+        </div>
+
+        <div class="formSection">
+          <div class="formSection__title">Compatibilidad</div>
+
+          <div class="grid grid--4">
+            <div class="field">
+              <label>Categoría *</label>
+              <input name="category" class="input" required list="categoryList" placeholder="Ej: Frenos" />
+              <datalist id="categoryList"></datalist>
+            </div>
+            <div class="field">
+              <label>Marca *</label>
+              <input name="brand" class="input" required list="brandList" placeholder="Ej: BMW" />
+              <datalist id="brandList"></datalist>
+            </div>
+            <div class="field">
+              <label>Modelo *</label>
+              <input name="model" class="input" required list="modelList" placeholder="Ej: X5 / C300 / A4" />
+              <datalist id="modelList"></datalist>
+            </div>
+            <div class="field">
+              <label>Motor / Versión</label>
+              <input name="engine" class="input" placeholder="Ej: 2.0T / 3.0 / B48" />
+            </div>
+          </div>
+
+          <div class="grid grid--4">
+            <div class="field">
+              <label>Año desde</label>
+              <input name="yearFrom" class="input" inputmode="numeric" placeholder="2014" />
+            </div>
+            <div class="field">
+              <label>Año hasta</label>
+              <input name="yearTo" class="input" inputmode="numeric" placeholder="2018" />
+            </div>
+            <div class="field">
+              <label>Estado</label>
+              <select name="condition" class="select">
+                <option value="Nuevo">Nuevo</option>
+                <option value="Usado">Usado</option>
+                <option value="Reacondicionado">Reacondicionado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Stock mínimo</label>
+              <input name="lowStock" class="input" inputmode="numeric" placeholder="3" />
+            </div>
+          </div>
+        </div>
+
+        <div class="formSection">
+          <div class="formSection__title">Costos y notas</div>
+
+          <div class="grid grid--3">
+            <div class="field">
+              <label>Stock *</label>
+              <input name="stock" class="input" required inputmode="numeric" placeholder="0" />
+            </div>
+            <div class="field">
+              <label>Costo</label>
+              <input name="cost" class="input" inputmode="decimal" placeholder="0" />
+            </div>
+            <div class="field">
+              <label>Precio de venta *</label>
+              <input name="price" class="input" required inputmode="decimal" placeholder="0" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Notas</label>
+            <textarea name="notes" class="textarea" rows="3" placeholder="Observaciones, compatibilidades, detalles extra..."></textarea>
+          </div>
+        </div>
+
+        <div class="formSection">
+          <div class="formSection__title">Foto</div>
+
+          <div class="photoRow">
+            <div class="photoBox" id="photoPreview">
+              <div class="muted">Sin foto</div>
+            </div>
+            <div class="photoActions">
+              <label class="btn filebtn">
+                Subir foto
+                <input id="photoInput" type="file" accept="image/*" />
+              </label>
+              <div class="muted small">La imagen se guarda localmente y se comprime automáticamente.</div>
+              <button type="button" id="btnRemovePhoto" class="btn btn--ghost">Quitar foto</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form__actions">
+          <button type="button" id="btnDelete" class="btn btn--danger hidden">Eliminar</button>
+          <div class="spacer"></div>
+          <button type="button" class="btn" data-close="modalItem">Cancelar</button>
+          <button type="submit" class="btn btn--primary">Guardar repuesto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalView">
+    <div class="modal__backdrop" data-close="modalView"></div>
+    <div class="modal__sheet modal__sheet--wide">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title" id="viewTitle">Detalle</div>
+          <div class="muted" id="viewSubtitle"></div>
+        </div>
+        <div class="modal__headActions">
+          <button id="btnEditFromView" class="btn">Editar</button>
+          <button id="btnShowQR" class="btn">QR</button>
+          <button id="btnSell" class="btn btn--primary">Despachar</button>
+          <button class="iconbtn" data-close="modalView" aria-label="Cerrar">✕</button>
+        </div>
+      </div>
+
+      <div class="view">
+        <div class="view__media" id="viewMedia"></div>
+        <div class="view__info">
+          <div class="kv" id="viewKV"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalQR">
+    <div class="modal__backdrop" data-close="modalQR"></div>
+    <div class="modal__sheet">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title">QR del repuesto</div>
+          <div class="muted">Etiqueta estándar lista para imprimir o descargar en PDF.</div>
+        </div>
+        <button class="iconbtn" data-close="modalQR" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="qrWrap">
+        <div class="qrLabelPreview" id="qrLabelPreview">
+          <canvas id="qrCanvas"></canvas>
+          <div class="qrLabelPreview__meta" id="qrLabelMeta"></div>
+        </div>
+        <div class="muted small" id="qrText"></div>
+        <div class="qrButtons">
+          <button id="btnPrintQR" class="btn btn--ghost">Imprimir QR</button>
+          <button id="btnPdfQR" class="btn btn--primary">Descargar QR en PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalSell">
+    <div class="modal__backdrop" data-close="modalSell"></div>
+    <div class="modal__sheet modal__sheet--wide">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title">Despacho / Venta</div>
+          <div class="muted" id="sellItemTitle"></div>
+        </div>
+        <button class="iconbtn" data-close="modalSell" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form id="sellForm" class="form">
+        <div class="grid grid--4">
+          <div class="field">
+            <label>Fecha *</label>
+            <input name="saleDate" class="input" type="datetime-local" />
+          </div>
+          <div class="field">
+            <label>Cantidad *</label>
+            <input name="qty" class="input" required inputmode="numeric" value="1" />
+          </div>
+          <div class="field">
+            <label>Precio unitario *</label>
+            <input name="unitPrice" class="input" required inputmode="decimal" />
+          </div>
+          <div class="field">
+            <label>Aplicar IVA / Tax</label>
+            <select name="taxMode" class="select">
+              <option value="on">Sí</option>
+              <option value="off">No</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid--3">
+          <div class="field">
+            <label>Cliente</label>
+            <input name="customer" class="input" placeholder="Nombre del cliente" />
+          </div>
+          <div class="field">
+            <label>Teléfono</label>
+            <input name="customerPhone" class="input" placeholder="Teléfono del cliente" />
+          </div>
+          <div class="field">
+            <label>Referencia</label>
+            <input name="ref" class="input" placeholder="Factura, orden o nota" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Dirección del cliente</label>
+          <input name="customerAddress" class="input" placeholder="Opcional" />
+        </div>
+
+        <div class="field">
+          <label>Notas de venta</label>
+          <textarea name="saleNotes" class="textarea" rows="2" placeholder="Observación opcional"></textarea>
+        </div>
+
+        <div class="totals" id="sellTotals"></div>
+
+        <div class="form__actions">
+          <button type="button" class="btn" data-close="modalSell">Cancelar</button>
+          <button type="submit" class="btn btn--primary">Confirmar despacho</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalSettings">
+    <div class="modal__backdrop" data-close="modalSettings"></div>
+    <div class="modal__sheet">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title">Ajustes del sistema</div>
+          <div class="muted">Datos del negocio, impuesto e impresión.</div>
+        </div>
+        <button class="iconbtn" data-close="modalSettings" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form id="settingsForm" class="form">
+        <div class="grid grid--2">
+          <div class="field">
+            <label>IVA / Tax (%)</label>
+            <input name="taxPercent" class="input" inputmode="decimal" value="0" />
+          </div>
+          <div class="field">
+            <label>Moneda</label>
+            <select name="currency" class="select">
+              <option value="USD">USD ($)</option>
+              <option value="DOP">DOP (RD$)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Nombre del negocio</label>
+          <input name="bizName" class="input" value="Repuesto PP &amp; Asociado" />
+        </div>
+
+        <div class="grid grid--2">
+          <div class="field">
+            <label>Teléfono</label>
+            <input name="bizPhone" class="input" value="(475) 279 1081" />
+          </div>
+          <div class="field">
+            <label>RUC / ID / Tax ID</label>
+            <input name="bizRnc" class="input" placeholder="Opcional" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Dirección</label>
+          <input name="bizAddress" class="input" value="C. A &, Santiago de los Caballeros 51000, RD" />
+        </div>
+
+        <div class="field">
+          <label>PIN de administrador</label>
+          <input name="adminPin" class="input" inputmode="numeric" placeholder="Ej: 1234" autocomplete="off" />
+        </div>
+
+        <div class="form__actions">
+          <button type="button" class="btn btn--ghost" id="btnResetSettings">Restablecer ajustes</button>
+          <button type="button" class="btn btn--danger" id="btnResetAll">Borrar TODO</button>
+          <div class="spacer"></div>
+          <button type="button" class="btn" data-close="modalSettings">Cancelar</button>
+          <button type="submit" class="btn btn--primary">Guardar ajustes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalSales">
+    <div class="modal__backdrop" data-close="modalSales"></div>
+    <div class="modal__sheet modal__sheet--wide">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title">Ventas y despachos</div>
+          <div class="muted">Resumen general e historial reciente.</div>
+        </div>
+        <button class="iconbtn" data-close="modalSales" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="form">
+        <div class="grid grid--4">
+          <div class="stat stat--blue">
+            <div class="k">Total vendido</div>
+            <div class="v" id="salesTotal">$0.00</div>
+          </div>
+          <div class="stat stat--green">
+            <div class="k">Ventas de hoy</div>
+            <div class="v" id="salesToday">$0.00</div>
+          </div>
+          <div class="stat stat--gold">
+            <div class="k">Transacciones</div>
+            <div class="v" id="salesCount">0</div>
+          </div>
+          <div class="stat stat--red">
+            <div class="k">Promedio por venta</div>
+            <div class="v" id="salesAvg">$0.00</div>
+          </div>
+        </div>
+
+        <div class="salesGrid">
+          <div class="salesCard">
+            <div class="salesCard__title">Ventas por categoría</div>
+            <div id="salesByCat" class="salesRows"></div>
+          </div>
+          <div class="salesCard">
+            <div class="salesCard__title">Últimos despachos</div>
+            <div id="salesList" class="salesRows"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalClients">
+    <div class="modal__backdrop" data-close="modalClients"></div>
+    <div class="modal__sheet modal__sheet--wide">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title">Clientes</div>
+          <div class="muted">Busca clientes y vuelve a abrir sus facturas.</div>
+        </div>
+        <button class="iconbtn" data-close="modalClients" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="form">
+        <div class="field">
+          <label>Buscar cliente / factura / referencia</label>
+          <input id="clientSearch" class="input" placeholder="Ej: Juan Pérez, INV-20260401-083008, orden 245..." />
+        </div>
+
+        <div class="clientsLayout">
+          <div class="clientsPanel">
+            <div class="clientsPanel__title">Listado de clientes</div>
+            <div id="clientsList" class="clientsList"></div>
+          </div>
+
+          <div class="clientsPanel">
+            <div class="clientsPanel__title">Facturas del cliente</div>
+            <div id="clientInvoices" class="clientsInvoices">
+              <div class="muted">Selecciona un cliente para ver sus facturas.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+    <div class="installPrompt hidden" id="installPrompt" aria-live="polite">
+    <button class="installPrompt__close" id="installPromptClose" type="button" aria-label="Cerrar">✕</button>
+
+    <div class="installPrompt__icon">📲</div>
+
+    <div class="installPrompt__content">
+      <div class="installPrompt__title" id="installPromptTitle">Instalar app</div>
+      <div class="installPrompt__text" id="installPromptText">
+        Instala esta app en tu dispositivo para abrirla más rápido y usarla como aplicación.
+      </div>
+
+      <div class="installPrompt__ios hidden" id="installPromptIosHelp">
+        En iPhone o iPad: toca <strong>Compartir</strong> y luego <strong>Agregar a pantalla de inicio</strong>.
+      </div>
+    </div>
+
+    <div class="installPrompt__actions">
+      <button class="btn btn--ghost" id="installPromptLater" type="button">Ahora no</button>
+      <button class="btn btn--primary" id="installPromptAction" type="button">Instalar</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.7/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
