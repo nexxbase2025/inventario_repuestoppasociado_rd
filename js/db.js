@@ -1,4 +1,4 @@
-const db = new Dexie("asociado_auto_import_inventory");
+const db = new Dexie("repuesto_pp_asociado_inventory");
 
 db.version(2).stores({
   items: "id, sku, oem, category, brand, model, yearFrom, yearTo, stock, price, updatedAt, createdAt",
@@ -11,10 +11,10 @@ async function dbInitDefaults(){
     await setSettings({
       taxPercent: 0,
       currency: "USD",
-      bizName: "Asociado Auto Import LLC",
-      bizPhone: "475-279-1082",
+      bizName: "Repuesto PP & Asociado",
+      bizPhone: "(475) 279 1081",
       bizRnc: "",
-      bizAddress: "17 Downs Street, Danbury, Connecticut 06810",
+      bizAddress: "C. A &, Santiago de los Caballeros 51000, RD",
       adminPin: ""
     });
   }

@@ -1,4 +1,4 @@
-const CACHE = "aai-inventory-v5-auth";
+const CACHE = "rppa-inventory-v6-firestore-auth";
 const ASSETS = [
   "./",
   "./index.html",
@@ -9,10 +9,10 @@ const ASSETS = [
   "./js/firebase-storage.js",
   "./js/app.js",
   "./js/item.js",
-  "./manifest.json",
+  "./manifest.json?v=2",
   "./assets/logo.jpeg",
-  "./assets/icon-192-aai-v4.png",
-  "./assets/icon-512-aai-v4.png"
+  "./assets/icon-192-v2.png",
+  "./assets/icon-512-v2.png"
 ];
 
 self.addEventListener("install", (e)=>{
@@ -34,7 +34,7 @@ self.addEventListener("fetch", (e)=>{
 
   e.respondWith((async ()=>{
     const url = new URL(req.url);
-    const isAppShell = req.mode === "navigate" || url.pathname.endsWith("/index.html") || url.pathname.endsWith("/manifest.json");
+    const isAppShell = req.mode === "navigate" || url.pathname.endsWith("/index.html") || url.pathname.endsWith("/app.js") || url.pathname.endsWith("/firebase-storage.js") || url.pathname.endsWith("/styles.css");
 
     if(isAppShell){
       try{

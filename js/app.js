@@ -37,13 +37,19 @@ function $(id){ return document.getElementById(id); }
 
 async function init(){
   registerSW();
+  if(typeof waitForAuthorizedUser === "function"){
+    await waitForAuthorizedUser();
+  }
   await dbInitDefaults();
+  if(typeof syncCloudToLocal === "function"){
+    try{ await syncCloudToLocal(); }catch(err){ console.warn("No se pudo sincronizar Firestore.", err); }
+  }
   bindEls();
   bindEvents();
   renderQuickChips();
   await refreshAll();
   await initAutoBackup();
-    initInstallPrompt();
+  initInstallPrompt();
   await onRoute();
 }
 
@@ -156,6 +162,17 @@ async function refreshAll(){
 }
 
 async function loadItems(){
+  if(typeof cloudLoadItems === "function"){
+    try{
+      const cloudItems = await cloudLoadItems();
+      await db.items.clear();
+      for(const item of cloudItems){
+        await db.items.put({ ...item, photo: item.photo || null });
+      }
+    }catch(err){
+      console.warn("Usando inventario local porque Firestore no respondió.", err);
+    }
+  }
   state.items = await db.items.orderBy("updatedAt").reverse().toArray();
 }
 
@@ -538,13 +555,11 @@ function renderPhotoPreview(source, size=null){
     els.photoPreview.innerHTML = `<div class="muted">Sin foto</div>`;
     return;
   }
-
   const isBlob = source instanceof Blob;
   const url = isBlob ? URL.createObjectURL(source) : String(source);
   const badge = isBlob
     ? `<div class="photoBadge">${Math.round((size ?? source.size) / 1024)} KB</div>`
     : `<div class="photoBadge">Firebase</div>`;
-
   els.photoPreview.innerHTML = `<div style="position:relative;width:100%;height:100%"><img src="${escapeAttr(url)}" alt="">${badge}</div>`;
 }
 
@@ -573,17 +588,13 @@ async function saveItem(e){
   const hasPhotoToUpload = state.currentPhoto instanceof Blob;
   if(hasPhotoToUpload){
     if(typeof uploadInventoryImage !== "function"){
-      alert("Firebase Storage no está cargado. Revisa que firebase-storage.js esté incluido antes de app.js.");
+      alert("Firebase Storage no está cargado. Revisa firebase-storage.js.");
       return;
     }
 
+    const submitBtn = els.itemForm?.querySelector('button[type="submit"]');
     try{
-      const submitBtn = els.itemForm?.querySelector('button[type="submit"]');
-      if(submitBtn){
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Subiendo foto...";
-      }
-
+      if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = "Subiendo foto..."; }
       const uploaded = await uploadInventoryImage(state.currentPhoto, itemId, sku);
       photoUrl = uploaded?.photoUrl || "";
       photoPath = uploaded?.photoPath || "";
@@ -592,11 +603,7 @@ async function saveItem(e){
       alert(err?.message || "No se pudo subir la imagen a Firebase Storage.");
       return;
     }finally{
-      const submitBtn = els.itemForm?.querySelector('button[type="submit"]');
-      if(submitBtn){
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Guardar repuesto";
-      }
+      if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = "Guardar repuesto"; }
     }
   }
 
@@ -626,15 +633,18 @@ async function saveItem(e){
   };
 
   await db.items.put(item);
+  if(typeof cloudSaveItem === "function") await cloudSaveItem(item);
   markDirty();
   closeModal("modalItem");
   await refreshAll();
 }
+
 async function deleteItem(){
   if(!state.currentItem) return;
   if(!confirm("¿Seguro que quieres eliminar este repuesto?")) return;
 
   await db.items.delete(state.currentItem.id);
+  if(typeof cloudDeleteItem === "function") await cloudDeleteItem(state.currentItem.id);
   markDirty();
   closeModal("modalItem");
   closeModal("modalView");
@@ -822,7 +832,7 @@ function updateSellTotals(){
   const unitPrice = Math.max(0, safeNum(els.sellForm.elements.unitPrice.value));
   const taxMode = els.sellForm.elements.taxMode.value;
   const taxPercent = safeNum(els.sellForm.dataset.taxPercent);
-  const settingsCurrency = (JSON.parse(localStorage.getItem("aai_settings") || "{}")?.currency) || "USD";
+  const settingsCurrency = (JSON.parse(localStorage.getItem("rppa_settings") || "{}")?.currency) || "USD";
 
   const subtotal = qty * unitPrice;
   const tax = taxMode === "on" ? subtotal * (taxPercent / 100) : 0;
@@ -897,7 +907,7 @@ async function confirmSell(e){
   const invoiceSeq = await getNextInvoiceSeq();
   const invoiceNo = formatLocalInvoiceStamp(localSaleDate);
 
-  await db.sales.add({
+  const saleRecord = {
     id: uuid(),
     invoiceNo,
     invoiceSeq,
@@ -916,12 +926,18 @@ async function confirmSell(e){
     saleNotes,
     createdAt: saleDate,
     saleDateText
-  });
+  };
 
-  await db.items.update(item.id, {
+  await db.sales.add(saleRecord);
+  if(typeof cloudSaveSale === "function") await cloudSaveSale(saleRecord);
+
+  const updatedItemPatch = {
     stock: safeNum(item.stock) - qty,
     updatedAt: now()
-  });
+  };
+  await db.items.update(item.id, updatedItemPatch);
+  const updatedItemForCloud = { ...item, ...updatedItemPatch };
+  if(typeof cloudSaveItem === "function") await cloudSaveItem(updatedItemForCloud);
 
   markDirty();
   closeModal("modalSell");
@@ -962,7 +978,7 @@ function invoiceHTML(item, sale, settings, isPreview=false){
 
       <div class="top">
         <div>
-          <div class="name">${escapeHtml(settings.bizName || "Asociado Auto Import LLC")}</div>
+          <div class="name">${escapeHtml(settings.bizName || "Repuesto PP & Asociado")}</div>
           <div class="sub">${escapeHtml(settings.bizAddress || "")}</div>
           <div class="sub">Tel: ${escapeHtml(settings.bizPhone || "")}</div>
           ${settings.bizRnc ? `<div class="sub">ID / Tax ID: ${escapeHtml(settings.bizRnc)}</div>` : ""}
@@ -1043,7 +1059,7 @@ async function downloadInvoicePdf(item, sale){
 
   doc.setFont("helvetica","bold");
   doc.setFontSize(20);
-  doc.text(settings.bizName || "Asociado Auto Import LLC", 40, y); y += line;
+  doc.text(settings.bizName || "Repuesto PP & Asociado", 40, y); y += line;
 
   doc.setFont("helvetica","normal");
   doc.setFontSize(10);
@@ -1115,7 +1131,7 @@ async function downloadInvoicePdf(item, sale){
 }
 
 function openInvoiceWindow(item, sale, isPreview=false){
-  const settingsRaw = localStorage.getItem("aai_settings") || "{}";
+  const settingsRaw = localStorage.getItem("rppa_settings") || "{}";
   const settings = JSON.parse(settingsRaw);
   const html = invoiceHTML(item, sale, settings, isPreview);
 
@@ -1174,7 +1190,7 @@ function openInvoiceWindow(item, sale, isPreview=false){
 
             doc.setFont("helvetica","bold");
             doc.setFontSize(20);
-            doc.text(invoiceSettings.bizName || "Asociado Auto Import LLC", 40, y); y += line;
+            doc.text(invoiceSettings.bizName || "Repuesto PP & Asociado", 40, y); y += line;
 
             doc.setFont("helvetica","normal");
             doc.setFontSize(10);
@@ -1267,10 +1283,10 @@ async function openSettings(){
   const s = await getSettings();
   els.settingsForm.elements.taxPercent.value = safeNum(s?.taxPercent);
   els.settingsForm.elements.currency.value = s?.currency || "USD";
-  els.settingsForm.elements.bizName.value = s?.bizName || "Asociado Auto Import LLC";
-  els.settingsForm.elements.bizPhone.value = s?.bizPhone || "475-279-1082";
+  els.settingsForm.elements.bizName.value = s?.bizName || "Repuesto PP & Asociado";
+  els.settingsForm.elements.bizPhone.value = s?.bizPhone || "(475) 279 1081";
   els.settingsForm.elements.bizRnc.value = s?.bizRnc || "";
-  els.settingsForm.elements.bizAddress.value = s?.bizAddress || "17 Downs Street, Danbury, Connecticut 06810";
+  els.settingsForm.elements.bizAddress.value = s?.bizAddress || "C. A &, Santiago de los Caballeros 51000, RD";
   els.settingsForm.elements.adminPin.value = s?.adminPin || "";
   openModal("modalSettings");
 }
@@ -1281,15 +1297,18 @@ async function saveSettings(e){
   const raw = Object.fromEntries(new FormData(els.settingsForm).entries());
   const current = await getSettings();
 
-  await setSettings({
+  const nextSettings = {
     taxPercent: Math.max(0, safeNum(raw.taxPercent)),
     currency: raw.currency || "USD",
-    bizName: (raw.bizName || "").trim() || "Asociado Auto Import LLC",
-    bizPhone: (raw.bizPhone || "").trim() || "475-279-1082",
+    bizName: (raw.bizName || "").trim() || "Repuesto PP & Asociado",
+    bizPhone: (raw.bizPhone || "").trim() || "(475) 279 1081",
     bizRnc: (raw.bizRnc || "").trim(),
-    bizAddress: (raw.bizAddress || "").trim() || "17 Downs Street, Danbury, Connecticut 06810",
+    bizAddress: (raw.bizAddress || "").trim() || "C. A &, Santiago de los Caballeros 51000, RD",
     adminPin: (raw.adminPin || "").trim() || current?.adminPin || ""
-  });
+  };
+
+  await setSettings(nextSettings);
+  if(typeof cloudSaveSettings === "function") await cloudSaveSettings(nextSettings);
 
   markDirty();
   closeModal("modalSettings");
@@ -1300,15 +1319,17 @@ async function resetSettings(){
   if(!confirm("Esto restablece solo los ajustes del negocio e impresión. ¿Continuar?")) return;
 
   const current = await getSettings();
-  await setSettings({
+  const defaultSettings = {
     taxPercent: 0,
     currency: "USD",
-    bizName: "Asociado Auto Import LLC",
-    bizPhone: "475-279-1082",
+    bizName: "Repuesto PP & Asociado",
+    bizPhone: "(475) 279 1081",
     bizRnc: "",
-    bizAddress: "17 Downs Street, Danbury, Connecticut 06810",
+    bizAddress: "C. A &, Santiago de los Caballeros 51000, RD",
     adminPin: current?.adminPin || ""
-  });
+  };
+  await setSettings(defaultSettings);
+  if(typeof cloudSaveSettings === "function") await cloudSaveSettings(defaultSettings);
 
   markDirty();
   await openSettings();
@@ -1330,6 +1351,7 @@ async function resetAll(){
   const typed = prompt("Escribe BORRAR TODO para confirmar:");
   if((typed || "").trim().toUpperCase() !== "BORRAR TODO") return;
 
+  if(typeof cloudClearAllData === "function") await cloudClearAllData();
   await db.delete();
   location.reload();
 }
@@ -1527,7 +1549,7 @@ async function exportAll(isAuto=false){
   }
 
   const payload = {
-    app: "Asociado Auto Import LLC - Inventario",
+    app: "Repuesto PP & Asociado - Inventario",
     exportedAt: now(),
     settings,
     items: exportItems,
@@ -1569,6 +1591,7 @@ async function importAll(e){
     });
 
     if(payload.settings) await setSettings(payload.settings);
+    if(typeof cloudReplaceAllFromLocal === "function") await cloudReplaceAllFromLocal();
     markDirty();
     await refreshAll();
     alert("Importación completada.");
@@ -1625,7 +1648,7 @@ function openSingle(item){
     ["Ubicación", item.location || "—"],
     ["Estado", item.condition || "—"],
     ["Stock", String(safeNum(item.stock))],
-    ["Precio", money(item.price, JSON.parse(localStorage.getItem("aai_settings") || "{}")?.currency || "USD")],
+    ["Precio", money(item.price, JSON.parse(localStorage.getItem("rppa_settings") || "{}")?.currency || "USD")],
     ["OEM / Part Number", item.oem || "—"],
     ["Notas", item.notes || "—"]
   ];
@@ -1645,7 +1668,7 @@ function registerSW(){
   });
 }
 
-const META_KEY = "aai_inv_meta";
+const META_KEY = "rppa_inv_meta";
 
 function metaGet(){
   try{ return JSON.parse(localStorage.getItem(META_KEY) || "{}") || {}; }
@@ -1696,70 +1719,48 @@ function initInstallPrompt(){
 
   if(!box || !btnAction || !btnClose || !btnLater || !title || !text || !iosHelp) return;
 
-  const DISMISS_KEY = "aai_install_prompt_dismissed";
-  const CLOSED_TODAY_KEY = "aai_install_prompt_closed_date";
-
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const DISMISS_KEY = "rppa_install_prompt_dismissed";
+  const CLOSED_TODAY_KEY = "rppa_install_prompt_closed_date";
+  const ua = navigator.userAgent || "";
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+  const isAndroid = /android/i.test(ua);
+  const isDesktop = !isIOS && !isAndroid;
   const isInStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true;
 
   const today = new Date();
-  const todayValue =
-    `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  const todayValue = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
 
-  function wasClosedToday(){
-    return localStorage.getItem(CLOSED_TODAY_KEY) === todayValue;
-  }
-
-  function markClosedToday(){
-    localStorage.setItem(CLOSED_TODAY_KEY, todayValue);
-  }
-
-  function permanentlyDismiss(){
-    localStorage.setItem(DISMISS_KEY, "1");
-  }
-
-  function isDismissed(){
-    return localStorage.getItem(DISMISS_KEY) === "1";
-  }
-
+  function wasClosedToday(){ return localStorage.getItem(CLOSED_TODAY_KEY) === todayValue; }
+  function markClosedToday(){ localStorage.setItem(CLOSED_TODAY_KEY, todayValue); }
+  function permanentlyDismiss(){ localStorage.setItem(DISMISS_KEY, "1"); }
+  function isDismissed(){ return localStorage.getItem(DISMISS_KEY) === "1"; }
   function showPrompt(){
     if(isDismissed() || wasClosedToday() || isInStandalone) return;
     box.classList.remove("hidden");
   }
+  function hidePrompt(){ box.classList.add("hidden"); }
 
-  function hidePrompt(){
-    box.classList.add("hidden");
-  }
-
-  btnClose.addEventListener("click", ()=>{
-    markClosedToday();
-    hidePrompt();
-  });
-
-  btnLater.addEventListener("click", ()=>{
-    markClosedToday();
-    hidePrompt();
-  });
+  btnClose.addEventListener("click", ()=>{ markClosedToday(); hidePrompt(); });
+  btnLater.addEventListener("click", ()=>{ markClosedToday(); hidePrompt(); });
 
   btnAction.addEventListener("click", async ()=>{
     if(isIOS){
       iosHelp.classList.remove("hidden");
       title.textContent = "Agregar a pantalla de inicio";
-      text.textContent = "Safari en iPhone no muestra instalación automática. Hazlo manualmente con estos pasos:";
+      text.textContent = "En iPhone se instala manualmente desde Safari.";
       return;
     }
-
     if(!deferredInstallPrompt){
-      hidePrompt();
+      if(isDesktop){
+        text.textContent = "Si tu navegador lo permite, busca el ícono de instalar en la barra de direcciones.";
+      }
       return;
     }
-
     deferredInstallPrompt.prompt();
     const choice = await deferredInstallPrompt.userChoice;
     deferredInstallPrompt = null;
-
     if(choice?.outcome === "accepted"){
       permanentlyDismiss();
       hidePrompt();
@@ -1772,14 +1773,11 @@ function initInstallPrompt(){
   window.addEventListener("beforeinstallprompt", (e)=>{
     e.preventDefault();
     deferredInstallPrompt = e;
-
     if(isInStandalone) return;
-
-    title.textContent = "Instalar app";
-    text.textContent = "Instala esta app en tu dispositivo para abrirla más rápido y usarla como aplicación.";
+    title.textContent = isAndroid ? "Instalar en Android" : "Instalar app";
+    text.textContent = isAndroid ? "Instala esta app en tu Android para abrirla más rápido." : "Instala esta app en tu computadora para abrirla como aplicación.";
     iosHelp.classList.add("hidden");
     btnAction.textContent = "Instalar";
-
     showPrompt();
   });
 
@@ -1797,13 +1795,4 @@ function initInstallPrompt(){
     showPrompt();
   }
 }
-
-
-if(typeof waitForInventoryAuth === "function"){
-  waitForInventoryAuth().then(()=>init()).catch((err)=>{
-    console.error(err);
-    alert("No se pudo iniciar la sesión del sistema.");
-  });
-}else{
-  alert("No se cargó Firebase Auth. Revisa firebase-storage.js y los scripts de index.html.");
-}
+init();

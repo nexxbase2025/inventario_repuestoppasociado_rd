@@ -131,12 +131,12 @@ function download(filename, text, type="application/json"){
 
 async function getSettings(){
   try{
-    return JSON.parse(localStorage.getItem("aai_settings") || "null");
+    return JSON.parse(localStorage.getItem("rppa_settings") || "null");
   }catch{
     return null;
   }
 }
 
 async function setSettings(obj){
-  localStorage.setItem("aai_settings", JSON.stringify(obj));
+  localStorage.setItem("rppa_settings", JSON.stringify(obj));
 }
