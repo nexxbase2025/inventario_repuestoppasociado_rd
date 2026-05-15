@@ -4,21 +4,40 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
-  <title>Inventario | Repuesto PP &amp; Asociado</title>
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="./assets/icon-192.png" />
-  <link rel="apple-touch-icon" href="./assets/icon-192.png" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Inventario | Asociado Auto Import LLC</title>
+  <link rel="manifest" href="./manifest.json?v=aai-icon-v4" />
+  <link rel="icon" href="./assets/icon-192-aai-v4.png" />
+  <link rel="apple-touch-icon" href="./assets/icon-192-aai-v4.png" />
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
-<body>
+<body class="auth-loading">
+  <div class="authGate" id="authGate" aria-live="polite">
+    <div class="authGate__card">
+      <div class="authGate__badge">Acceso privado</div>
+      <h1>Inventario protegido</h1>
+      <p>Ingresa con el correo autorizado para administrar el inventario y subir imágenes a Firebase.</p>
+
+      <form id="loginForm" class="authGate__form">
+        <label>Correo electrónico</label>
+        <input id="loginEmail" class="input" type="email" autocomplete="email" required placeholder="alexmecanica125@gmail.com" />
+
+        <label>Contraseña</label>
+        <input id="loginPassword" class="input" type="password" autocomplete="current-password" required placeholder="Contraseña" />
+
+        <button id="loginButton" class="btn btn--primary" type="submit">Entrar</button>
+        <div id="loginError" class="authGate__error hidden"></div>
+      </form>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="brand">
-      <img class="brand__logo" src="./assets/logo.jpeg" alt="Repuesto PP &amp; Asociado" />
+      <img class="brand__logo" src="./assets/logo.jpeg" alt="Asociado Auto Import LLC" />
       <div class="brand__text">
         <div class="brand__eyebrow">Sistema profesional</div>
         <div class="brand__title">Inventario de Repuestos</div>
-        <div class="brand__sub">Repuesto PP &amp; Asociado</div>
+        <div class="brand__sub">Asociado Auto Import LLC</div>
       </div>
     </div>
 
@@ -27,6 +46,7 @@
       <button id="btnClients" class="btn">Clientes</button>
       <button id="btnSales" class="btn">Ventas</button>
       <button id="btnSettings" class="btn">Ajustes</button>
+      <button id="btnLogout" class="btn btn--ghost">Salir</button>
     </div>
   </header>
 
@@ -531,13 +551,13 @@
 
         <div class="field">
           <label>Nombre del negocio</label>
-          <input name="bizName" class="input" value="Repuesto PP &amp; Asociado" />
+          <input name="bizName" class="input" value="Asociado Auto Import LLC" />
         </div>
 
         <div class="grid grid--2">
           <div class="field">
             <label>Teléfono</label>
-            <input name="bizPhone" class="input" value="(475) 279 1081" />
+            <input name="bizPhone" class="input" value="475-279-1082" />
           </div>
           <div class="field">
             <label>RUC / ID / Tax ID</label>
@@ -547,7 +567,7 @@
 
         <div class="field">
           <label>Dirección</label>
-          <input name="bizAddress" class="input" value="C. A &, Santiago de los Caballeros 51000, RD" />
+          <input name="bizAddress" class="input" value="17 Downs Street, Danbury, Connecticut 06810" />
         </div>
 
         <div class="field">
@@ -671,6 +691,10 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="./js/utils.js"></script>
   <script src="./js/db.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+  <script src="./js/firebase-storage.js"></script>
   <script src="./js/app.js"></script>
 </body>
 </html>

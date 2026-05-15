@@ -1,23 +1,23 @@
 
 :root{
-  --bg:#e7ecf2;
-  --bg2:#f7f9fb;
+  --bg:#eef4fb;
+  --bg2:#f8fbff;
   --panel:#ffffff;
-  --panel2:#f3f6f9;
-  --line:#c9d3df;
-  --line2:#e2e8f0;
-  --text:#0b1220;
-  --muted:#5d6978;
+  --panel2:#f7fafc;
+  --line:#d7e2ee;
+  --line2:#e8eef5;
+  --text:#0f172a;
+  --muted:#5f6f85;
 
-  --blue:#0e5f9e;
-  --blue-2:#2384c6;
-  --cyan:#0f7894;
-  --green:#16724a;
-  --gold:#9a7a35;
-  --purple:#4454a7;
-  --pink:#b91c1c;
-  --red:#d71920;
-  --slate:#1f2937;
+  --blue:#1d4ed8;
+  --blue-2:#2563eb;
+  --cyan:#0891b2;
+  --green:#15803d;
+  --gold:#c28a22;
+  --purple:#7c3aed;
+  --pink:#db2777;
+  --red:#dc2626;
+  --slate:#334155;
 
   --shadow:0 18px 45px rgba(15,23,42,.08);
   --shadow-soft:0 10px 24px rgba(15,23,42,.06);
@@ -31,8 +31,8 @@ body{
   color:var(--text);
   font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   background:
-    radial-gradient(900px 500px at -10% -20%, rgba(14,95,158,.13), transparent 60%),
-    radial-gradient(700px 450px at 110% 0%, rgba(215,25,32,.12), transparent 60%),
+    radial-gradient(900px 500px at -10% -20%, rgba(37,99,235,.08), transparent 60%),
+    radial-gradient(700px 450px at 110% 0%, rgba(194,138,34,.10), transparent 60%),
     linear-gradient(180deg, var(--bg2), var(--bg));
 }
 
@@ -49,9 +49,9 @@ body{
   align-items:center;
   justify-content:space-between;
   padding:16px 22px;
-  background:rgba(11,18,32,.88);
+  background:rgba(255,255,255,.82);
   backdrop-filter:blur(14px);
-  border-bottom:1px solid rgba(255,255,255,.12);
+  border-bottom:1px solid rgba(255,255,255,.65);
   box-shadow:0 4px 18px rgba(15,23,42,.04);
 }
 
@@ -86,12 +86,9 @@ body{
 }
 
 .brand__sub{
-  color:#d7e2ee;
+  color:var(--muted);
   font-size:.92rem;
 }
-
-.topbar .btn{border-color:rgba(255,255,255,.18);}
-.topbar .btn:not(.btn--primary){background:rgba(255,255,255,.08);color:#fff;}
 
 .topbar__actions{
   display:flex;
@@ -1194,339 +1191,87 @@ body.mode-single .topbar__actions{
   }
 }
 
-/* Ajuste visual RPPA */
-.topbar .brand__title{color:#ffffff;}
-.topbar .brand__logo{border-color:rgba(255,255,255,.22);background:#0b1220;}
-.hero__main,.hero__stats,.panel{border-color:rgba(11,18,32,.08);}
-.btn--primary{background:linear-gradient(180deg,#2384c6,#0e5f9e);border-color:rgba(14,95,158,.35);}
-.metricTile--red{background:linear-gradient(135deg,#ef4444,#d71920)}
-.metricTile--blue{background:linear-gradient(135deg,#2384c6,#0e5f9e)}
-.badge--blue{background:#e9f5ff;border-color:#b9dcf5;color:#0e5f9e}
-.badge--gold{background:#f7f3e8;border-color:#dfcf9c;color:#785f21}
 
-/* Ajuste solicitado: fondo general distinto y métricas tipo burbuja blanca */
-:root{
-  --bg:#d8e0ea;
-  --bg2:#eef3f8;
-  --panel:#ffffff;
-  --panel2:#f6f8fb;
-  --line:#c6d1df;
-  --line2:#dfe7f0;
-  --text:#0b1f36;
-  --muted:#52677e;
-  --blue:#0e5f9e;
-  --blue-2:#1f7fbe;
-  --red:#d71920;
-  --shadow:0 20px 50px rgba(9,30,66,.13);
-  --shadow-soft:0 12px 28px rgba(9,30,66,.10);
+/* Login privado con Firebase Authentication */
+body.auth-loading .topbar,
+body.auth-loading .container,
+body.auth-loading .single,
+body.auth-loading .installPrompt,
+body.auth-loading .autobackup{
+  display:none!important;
 }
 
-body{
-  background:
-    radial-gradient(780px 420px at 8% -12%, rgba(14,95,158,.18), transparent 62%),
-    radial-gradient(650px 380px at 105% 8%, rgba(215,25,32,.10), transparent 58%),
-    linear-gradient(180deg,#f3f6fa 0%,#e3e9f1 44%,#d4dde8 100%);
-}
-
-.hero__main,
-.hero__stats,
-.panel,
-.modal__sheet,
-.clientsPanel,
-.salesCard,
-.alertItem,
-.invoiceCard,
-.card,
-.stat{
-  background:rgba(255,255,255,.94);
-  border:1px solid rgba(14,95,158,.12);
-  box-shadow:0 16px 38px rgba(9,30,66,.10);
-}
-
-.hero__badge,
-.chip,
-.hint{
-  background:#e8f2fb;
-  color:#0e5f9e;
-  border-color:#b7d4ec;
-}
-
-.metricTile,
-.miniStat{
-  background:linear-gradient(180deg,#ffffff,#f7fbff)!important;
-  color:#0e5f9e;
-  border:1px solid #bdd7ec;
-  box-shadow:0 16px 34px rgba(9,30,66,.12);
-}
-
-.metricTile::after{
-  background:radial-gradient(circle,rgba(14,95,158,.12),transparent 68%);
-}
-
-.metricTile__label,
-.miniStat span{
-  color:#334155;
-  opacity:1;
-}
-
-.metricTile__value,
-.miniStat strong{
-  color:#0e5f9e;
-  text-shadow:0 1px 0 rgba(255,255,255,.8);
-}
-
-.stat .v,
-.invoiceCard__amount{
-  color:#0e5f9e;
-}
-
-.btn--primary,
-.installPrompt__icon{
-  background:linear-gradient(180deg,#2384c6,#0e5f9e)!important;
-  border-color:rgba(14,95,158,.35)!important;
-}
-
-/* =========================
-   RPPA v3 - apariencia fuerte y diferente
-   Fondo total oscuro/azul + burbujas oro/azul
-   ========================= */
-:root{
-  --bg:#08111f;
-  --bg2:#0d2238;
-  --panel:#111827;
-  --panel2:#172235;
-  --line:#2d3f56;
-  --line2:#24364c;
-  --text:#f8fafc;
-  --muted:#c7d2df;
-
-  --blue:#2f9ee8;
-  --blue-2:#0e5f9e;
-  --cyan:#3bc4e8;
-  --green:#22c55e;
-  --gold:#d9a441;
-  --gold-2:#a87922;
-  --purple:#7aa2ff;
-  --pink:#ff4d5a;
-  --red:#e11d2e;
-  --slate:#1e293b;
-
-  --shadow:0 22px 60px rgba(0,0,0,.35);
-  --shadow-soft:0 12px 30px rgba(0,0,0,.24);
-}
-
-body{
-  color:var(--text);
-  background:
-    radial-gradient(900px 540px at 10% 0%, rgba(47,158,232,.28), transparent 58%),
-    radial-gradient(780px 520px at 95% 12%, rgba(217,164,65,.20), transparent 55%),
-    radial-gradient(900px 620px at 50% 105%, rgba(225,29,46,.16), transparent 60%),
-    linear-gradient(135deg, #050a12 0%, #08111f 38%, #102f4d 100%) !important;
-  background-attachment:fixed;
-}
-
-body::before{
-  content:"";
+.authGate{
   position:fixed;
   inset:0;
-  z-index:-1;
-  pointer-events:none;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:20px;
   background:
-    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
-  background-size:42px 42px;
-  mask-image:linear-gradient(180deg, rgba(0,0,0,.8), rgba(0,0,0,.2));
+    radial-gradient(900px 500px at -10% -20%, rgba(37,99,235,.18), transparent 60%),
+    radial-gradient(700px 450px at 110% 0%, rgba(194,138,34,.18), transparent 60%),
+    linear-gradient(180deg, #f8fbff, #eef4fb);
 }
 
-.topbar{
-  background:linear-gradient(90deg, rgba(3,7,18,.96), rgba(8,25,43,.94), rgba(50,35,12,.82)) !important;
-  border-bottom:1px solid rgba(217,164,65,.28);
-  box-shadow:0 10px 34px rgba(0,0,0,.36);
+body.auth-ready .authGate{
+  display:none!important;
 }
 
-.brand__logo{
-  border:2px solid rgba(217,164,65,.72);
-  box-shadow:0 0 0 4px rgba(47,158,232,.13), 0 14px 30px rgba(0,0,0,.35);
-}
-.brand__eyebrow{color:#f3c766;}
-.brand__title{color:#fff;}
-.brand__sub{color:#bfd9f2;}
-
-.hero__main,
-.hero__stats,
-.panel,
-.modal__sheet,
-.clientsPanel,
-.salesCard,
-.formSection,
-.empty__card,
-.alertItem,
-.clientCard,
-.invoiceCard,
-.qrLabelPreview,
-.stat,
-.card{
-  background:linear-gradient(180deg, rgba(17,30,48,.94), rgba(10,20,35,.92)) !important;
-  border:1px solid rgba(217,164,65,.24) !important;
-  box-shadow:var(--shadow) !important;
-  color:#f8fafc;
+.authGate__card{
+  width:min(430px,100%);
+  background:rgba(255,255,255,.94);
+  border:1px solid rgba(255,255,255,.86);
+  border-radius:30px;
+  box-shadow:0 30px 80px rgba(15,23,42,.16);
+  padding:28px;
 }
 
-.hero__main{
-  background:
-    linear-gradient(135deg, rgba(12,38,64,.96), rgba(8,17,31,.94) 58%, rgba(81,55,15,.72)) !important;
+.authGate__badge{
+  display:inline-flex;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(37,99,235,.10);
+  color:var(--blue);
+  font-weight:900;
+  font-size:.85rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
 }
 
-.hero__badge,
-.chip{
-  background:linear-gradient(135deg, rgba(217,164,65,.95), rgba(168,121,34,.95)) !important;
-  color:#08111f !important;
-  border:1px solid rgba(255,232,178,.35);
-  box-shadow:0 10px 26px rgba(217,164,65,.18);
+.authGate h1{
+  margin:14px 0 8px;
+  font-size:1.7rem;
+  line-height:1.05;
 }
 
-.hero p,
-.muted,
-.alertItem__text,
-.hint__text,
-.field label,
-.salesRows .k,
-.kv .k,
-.installPrompt__text{
-  color:#c7d2df !important;
+.authGate p{
+  margin:0 0 18px;
+  color:var(--muted);
+  line-height:1.45;
 }
 
-.sectionTitle,
-.hero h1,
-.listHead h2,
-.card__title,
-.modal__title,
-.single__title,
-.salesCard__title,
-.clientsPanel__title,
-.empty__title,
-.kv .v{
-  color:#ffffff !important;
+.authGate__form{
+  display:grid;
+  gap:10px;
 }
 
-/* Métricas principales: ya no blancas; oro/azul con contraste */
-.metricTile{
-  color:#06111f !important;
-  background:linear-gradient(135deg, #f4c96d 0%, #d9a441 42%, #a87922 100%) !important;
-  border:1px solid rgba(255,237,193,.35);
-  box-shadow:0 18px 42px rgba(217,164,65,.20) !important;
-}
-.metricTile::after{
-  background:rgba(255,255,255,.22) !important;
-}
-.metricTile__label{color:#102033 !important; opacity:1;}
-.metricTile__value{color:#06111f !important; text-shadow:0 1px 0 rgba(255,255,255,.25);}
-.metricTile--cyan,
-.metricTile--purple,
-.metricTile--slate,
-.metricTile--pink{
-  background:linear-gradient(135deg, #45b9f2 0%, #0e5f9e 55%, #08385f 100%) !important;
-  color:#fff !important;
-  border-color:rgba(130,211,255,.32);
-  box-shadow:0 18px 42px rgba(47,158,232,.20) !important;
-}
-.metricTile--cyan .metricTile__label,
-.metricTile--cyan .metricTile__value,
-.metricTile--purple .metricTile__label,
-.metricTile--purple .metricTile__value,
-.metricTile--slate .metricTile__label,
-.metricTile--slate .metricTile__value,
-.metricTile--pink .metricTile__label,
-.metricTile--pink .metricTile__value{
-  color:#fff !important;
-  text-shadow:0 2px 8px rgba(0,0,0,.25);
-}
-.metricTile--red{
-  background:linear-gradient(135deg, #ff5964 0%, #d71920 55%, #7f0e14 100%) !important;
-  color:#fff !important;
-}
-.metricTile--red .metricTile__label,
-.metricTile--red .metricTile__value{color:#fff !important;}
-
-/* Estadísticas pequeñas y burbujas del hero */
-.stat,
-.miniStat{
-  background:linear-gradient(135deg, rgba(18,46,76,.98), rgba(12,22,38,.96)) !important;
-  border:1px solid rgba(47,158,232,.25) !important;
-  color:#fff !important;
-}
-.stat--gold,
-.miniStat--gold{
-  background:linear-gradient(135deg, #f0bf5c, #a87922) !important;
-  color:#08111f !important;
-}
-.stat--gold .k,
-.stat--gold .v,
-.miniStat--gold span,
-.miniStat--gold strong{color:#08111f !important;}
-.stat .k{color:#c7d2df !important;}
-.stat .v{color:#fff !important;}
-
-.input,.select,.textarea{
-  background:#0f1e32 !important;
-  border-color:#314760 !important;
-  color:#f8fafc !important;
-}
-.input::placeholder,.textarea::placeholder{color:#93a4b8 !important;}
-.input:focus,.select:focus,.textarea:focus{
-  border-color:#d9a441 !important;
-  box-shadow:0 0 0 4px rgba(217,164,65,.14) !important;
+.authGate__form label{
+  font-weight:900;
+  color:#334155;
+  font-size:.92rem;
 }
 
-.btn{
-  background:#13253b;
-  color:#f8fafc;
-  border-color:#35516d;
-}
-.btn--primary{
-  background:linear-gradient(135deg,#d9a441,#a87922) !important;
-  border-color:rgba(255,237,193,.35) !important;
-  color:#08111f !important;
-  box-shadow:0 10px 24px rgba(217,164,65,.22);
-}
-.btn--ghost{background:rgba(255,255,255,.06) !important;color:#e5eef8 !important;}
-.btn--danger{background:rgba(225,29,46,.16) !important;color:#ffb4b8 !important;border-color:rgba(225,29,46,.45) !important;}
-
-.badge{
-  background:rgba(255,255,255,.08) !important;
-  border-color:rgba(255,255,255,.15) !important;
-  color:#e5eef8 !important;
-}
-.badge--gold{background:rgba(217,164,65,.18) !important;border-color:rgba(217,164,65,.45) !important;color:#ffd983 !important;}
-.badge--blue{background:rgba(47,158,232,.18) !important;border-color:rgba(47,158,232,.45) !important;color:#9bd8ff !important;}
-.badge--green{background:rgba(34,197,94,.16) !important;border-color:rgba(34,197,94,.42) !important;color:#9af0b8 !important;}
-.badge--red{background:rgba(225,29,46,.16) !important;border-color:rgba(225,29,46,.42) !important;color:#ffb4b8 !important;}
-
-.thumb,.photoBox,.view__media,.hint,.totals,.qrbrand,.installPrompt__ios{
-  background:#0f1e32 !important;
-  border-color:#314760 !important;
-  color:#e5eef8 !important;
+.authGate__error{
+  border:1px solid #fecdd3;
+  background:#fff1f2;
+  color:#b42318;
+  border-radius:16px;
+  padding:12px;
+  font-weight:800;
+  font-size:.92rem;
 }
 
-.modal__head{
-  background:linear-gradient(90deg, rgba(9,18,32,.96), rgba(16,47,77,.94)) !important;
-  border-bottom:1px solid rgba(217,164,65,.25) !important;
+body.auth-ready #btnLogout{
+  display:inline-flex;
 }
-.iconbtn,
-.installPrompt__close{
-  background:#13253b !important;
-  color:#fff !important;
-  border-color:#35516d !important;
-}
-
-.price,
-.invoiceCard__amount{color:#ffd983 !important;}
-.listHead__right .btn{border-color:rgba(217,164,65,.35);}
-
-.installPrompt{
-  background:linear-gradient(135deg, rgba(14,32,54,.97), rgba(76,54,16,.95)) !important;
-  border:1px solid rgba(217,164,65,.35) !important;
-  color:#fff !important;
-}
-.installPrompt__icon{background:linear-gradient(135deg,#d9a441,#0e5f9e) !important;}
-.installPrompt__title{color:#fff !important;}

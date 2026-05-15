@@ -1,5 +1,4 @@
-
-const CACHE = "rppa-inventory-v1";
+const CACHE = "aai-inventory-v5-auth";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,12 +6,13 @@ const ASSETS = [
   "./css/styles.css",
   "./js/utils.js",
   "./js/db.js",
+  "./js/firebase-storage.js",
   "./js/app.js",
   "./js/item.js",
   "./manifest.json",
   "./assets/logo.jpeg",
-  "./assets/icon-192.png",
-  "./assets/icon-512.png"
+  "./assets/icon-192-aai-v4.png",
+  "./assets/icon-512-aai-v4.png"
 ];
 
 self.addEventListener("install", (e)=>{
@@ -33,12 +33,27 @@ self.addEventListener("fetch", (e)=>{
   if(req.method !== "GET") return;
 
   e.respondWith((async ()=>{
+    const url = new URL(req.url);
+    const isAppShell = req.mode === "navigate" || url.pathname.endsWith("/index.html") || url.pathname.endsWith("/manifest.json");
+
+    if(isAppShell){
+      try{
+        const fresh = await fetch(req, { cache: "no-store" });
+        if(url.origin === location.origin){
+          const cache = await caches.open(CACHE);
+          cache.put(req, fresh.clone());
+        }
+        return fresh;
+      }catch{
+        return caches.match(req) || caches.match("./index.html");
+      }
+    }
+
     const cached = await caches.match(req);
     if(cached) return cached;
 
     try{
       const fresh = await fetch(req);
-      const url = new URL(req.url);
       if(url.origin === location.origin){
         const cache = await caches.open(CACHE);
         cache.put(req, fresh.clone());

@@ -25,6 +25,9 @@ let state = {
   brands: [],
   currentItem: null,
   currentPhoto: null,
+  currentPhotoUrl: "",
+  currentPhotoPath: "",
+  photoRemoved: false,
   clients: [],
   selectedClientKey: null
 };
@@ -102,6 +105,9 @@ function bindEvents(){
   els.photoInput?.addEventListener("change", onPhotoSelected);
   els.btnRemovePhoto?.addEventListener("click", ()=>{
     state.currentPhoto = null;
+    state.currentPhotoUrl = "";
+    state.currentPhotoPath = "";
+    state.photoRemoved = true;
     renderPhotoPreview(null);
   });
 
@@ -307,7 +313,7 @@ function renderAlerts(){
   });
 
   const outItems = state.items.filter(i => safeNum(i.stock) <= 0);
-  const noPhoto = state.items.filter(i => !i.photo);
+  const noPhoto = state.items.filter(i => !i.photo && !i.photoUrl);
   const noPrice = state.items.filter(i => safeNum(i.price) <= 0);
   const noOem = state.items.filter(i => !String(i.oem || "").trim());
 
@@ -446,7 +452,7 @@ async function renderList(showHint){
     const stock = safeNum(item.stock);
     const lowStock = safeNum(item.lowStock, 3);
     const years = yearsLabel(item.yearFrom, item.yearTo);
-    const img = item.photo ? URL.createObjectURL(item.photo) : null;
+    const img = item.photoUrl || (item.photo ? URL.createObjectURL(item.photo) : null);
 
     let stockBadge = `<span class="badge badge--green">Stock: ${stock}</span>`;
     if(stock <= 0) stockBadge = `<span class="badge badge--red">Agotado</span>`;
@@ -487,6 +493,9 @@ async function renderList(showHint){
 function openItemModal(item=null){
   state.currentItem = item;
   state.currentPhoto = item?.photo ?? null;
+  state.currentPhotoUrl = item?.photoUrl || "";
+  state.currentPhotoPath = item?.photoPath || "";
+  state.photoRemoved = false;
 
   els.itemForm.reset();
   els.itemModalTitle.textContent = item ? "Editar repuesto" : "Nuevo repuesto";
@@ -506,7 +515,7 @@ function openItemModal(item=null){
   }
 
   syncModelSuggestions();
-  renderPhotoPreview(state.currentPhoto);
+  renderPhotoPreview(state.currentPhoto || state.currentPhotoUrl);
   openModal("modalItem");
 }
 
@@ -524,23 +533,76 @@ async function onPhotoSelected(e){
   }
 }
 
-function renderPhotoPreview(blob, size=null){
-  if(!blob){
+function renderPhotoPreview(source, size=null){
+  if(!source){
     els.photoPreview.innerHTML = `<div class="muted">Sin foto</div>`;
     return;
   }
-  const url = URL.createObjectURL(blob);
-  const kb = Math.round((size ?? blob.size) / 1024);
-  els.photoPreview.innerHTML = `<div style="position:relative;width:100%;height:100%"><img src="${url}" alt=""><div class="photoBadge">${kb} KB</div></div>`;
+
+  const isBlob = source instanceof Blob;
+  const url = isBlob ? URL.createObjectURL(source) : String(source);
+  const badge = isBlob
+    ? `<div class="photoBadge">${Math.round((size ?? source.size) / 1024)} KB</div>`
+    : `<div class="photoBadge">Firebase</div>`;
+
+  els.photoPreview.innerHTML = `<div style="position:relative;width:100%;height:100%"><img src="${escapeAttr(url)}" alt="">${badge}</div>`;
 }
 
 async function saveItem(e){
   e.preventDefault();
 
   const raw = Object.fromEntries(new FormData(els.itemForm).entries());
+  const itemId = state.currentItem?.id || uuid();
+  const sku = (raw.sku || "").trim();
+
+  if(!sku || !(raw.name || "").trim() || !(raw.category || "").trim() || !(raw.brand || "").trim() || !(raw.model || "").trim() || !(raw.location || "").trim()){
+    alert("Completa al menos: SKU, nombre, categoría, marca, modelo y ubicación.");
+    return;
+  }
+
+  const existing = await db.items.where("sku").equals(sku).first();
+  if(existing && existing.id !== itemId){
+    alert("Ya existe otro repuesto con ese SKU.");
+    return;
+  }
+
+  let photoUrl = state.photoRemoved ? "" : (state.currentPhotoUrl || state.currentItem?.photoUrl || "");
+  let photoPath = state.photoRemoved ? "" : (state.currentPhotoPath || state.currentItem?.photoPath || "");
+  let localPhoto = state.photoRemoved ? null : (state.currentItem?.photo || null);
+
+  const hasPhotoToUpload = state.currentPhoto instanceof Blob;
+  if(hasPhotoToUpload){
+    if(typeof uploadInventoryImage !== "function"){
+      alert("Firebase Storage no está cargado. Revisa que firebase-storage.js esté incluido antes de app.js.");
+      return;
+    }
+
+    try{
+      const submitBtn = els.itemForm?.querySelector('button[type="submit"]');
+      if(submitBtn){
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Subiendo foto...";
+      }
+
+      const uploaded = await uploadInventoryImage(state.currentPhoto, itemId, sku);
+      photoUrl = uploaded?.photoUrl || "";
+      photoPath = uploaded?.photoPath || "";
+      localPhoto = null;
+    }catch(err){
+      alert(err?.message || "No se pudo subir la imagen a Firebase Storage.");
+      return;
+    }finally{
+      const submitBtn = els.itemForm?.querySelector('button[type="submit"]');
+      if(submitBtn){
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Guardar repuesto";
+      }
+    }
+  }
+
   const item = {
-    id: state.currentItem?.id || uuid(),
-    sku: (raw.sku || "").trim(),
+    id: itemId,
+    sku,
     oem: (raw.oem || "").trim(),
     category: (raw.category || "").trim(),
     location: (raw.location || "").trim(),
@@ -556,28 +618,18 @@ async function saveItem(e){
     name: (raw.name || "").trim(),
     notes: (raw.notes || "").trim(),
     lowStock: raw.lowStock ? parseInt(raw.lowStock, 10) : 3,
-    photo: state.currentPhoto || null,
+    photo: localPhoto,
+    photoUrl,
+    photoPath,
     createdAt: state.currentItem?.createdAt || now(),
     updatedAt: now()
   };
-
-  if(!item.sku || !item.name || !item.category || !item.brand || !item.model || !item.location){
-    alert("Completa al menos: SKU, nombre, categoría, marca, modelo y ubicación.");
-    return;
-  }
-
-  const existing = await db.items.where("sku").equals(item.sku).first();
-  if(existing && existing.id !== item.id){
-    alert("Ya existe otro repuesto con ese SKU.");
-    return;
-  }
 
   await db.items.put(item);
   markDirty();
   closeModal("modalItem");
   await refreshAll();
 }
-
 async function deleteItem(){
   if(!state.currentItem) return;
   if(!confirm("¿Seguro que quieres eliminar este repuesto?")) return;
@@ -595,8 +647,9 @@ async function openView(item){
   els.viewTitle.textContent = item.name || item.sku;
   els.viewSubtitle.textContent = `${item.sku}${item.oem ? ` • OEM: ${item.oem}` : ""} • ${item.brand} ${item.model} • ${yearsLabel(item.yearFrom, item.yearTo)}`;
 
-  if(item.photo){
-    els.viewMedia.innerHTML = `<img src="${URL.createObjectURL(item.photo)}" alt="">`;
+  const viewImg = item.photoUrl || (item.photo ? URL.createObjectURL(item.photo) : "");
+  if(viewImg){
+    els.viewMedia.innerHTML = `<img src="${escapeAttr(viewImg)}" alt="">`;
   }else{
     els.viewMedia.innerHTML = `<div class="muted">Sin foto</div>`;
   }
@@ -769,7 +822,7 @@ function updateSellTotals(){
   const unitPrice = Math.max(0, safeNum(els.sellForm.elements.unitPrice.value));
   const taxMode = els.sellForm.elements.taxMode.value;
   const taxPercent = safeNum(els.sellForm.dataset.taxPercent);
-  const settingsCurrency = (JSON.parse(localStorage.getItem("rppa_settings") || "{}")?.currency) || "USD";
+  const settingsCurrency = (JSON.parse(localStorage.getItem("aai_settings") || "{}")?.currency) || "USD";
 
   const subtotal = qty * unitPrice;
   const tax = taxMode === "on" ? subtotal * (taxPercent / 100) : 0;
@@ -909,7 +962,7 @@ function invoiceHTML(item, sale, settings, isPreview=false){
 
       <div class="top">
         <div>
-          <div class="name">${escapeHtml(settings.bizName || "Repuesto PP & Asociado")}</div>
+          <div class="name">${escapeHtml(settings.bizName || "Asociado Auto Import LLC")}</div>
           <div class="sub">${escapeHtml(settings.bizAddress || "")}</div>
           <div class="sub">Tel: ${escapeHtml(settings.bizPhone || "")}</div>
           ${settings.bizRnc ? `<div class="sub">ID / Tax ID: ${escapeHtml(settings.bizRnc)}</div>` : ""}
@@ -990,7 +1043,7 @@ async function downloadInvoicePdf(item, sale){
 
   doc.setFont("helvetica","bold");
   doc.setFontSize(20);
-  doc.text(settings.bizName || "Repuesto PP & Asociado", 40, y); y += line;
+  doc.text(settings.bizName || "Asociado Auto Import LLC", 40, y); y += line;
 
   doc.setFont("helvetica","normal");
   doc.setFontSize(10);
@@ -1062,7 +1115,7 @@ async function downloadInvoicePdf(item, sale){
 }
 
 function openInvoiceWindow(item, sale, isPreview=false){
-  const settingsRaw = localStorage.getItem("rppa_settings") || "{}";
+  const settingsRaw = localStorage.getItem("aai_settings") || "{}";
   const settings = JSON.parse(settingsRaw);
   const html = invoiceHTML(item, sale, settings, isPreview);
 
@@ -1121,7 +1174,7 @@ function openInvoiceWindow(item, sale, isPreview=false){
 
             doc.setFont("helvetica","bold");
             doc.setFontSize(20);
-            doc.text(invoiceSettings.bizName || "Repuesto PP & Asociado", 40, y); y += line;
+            doc.text(invoiceSettings.bizName || "Asociado Auto Import LLC", 40, y); y += line;
 
             doc.setFont("helvetica","normal");
             doc.setFontSize(10);
@@ -1214,10 +1267,10 @@ async function openSettings(){
   const s = await getSettings();
   els.settingsForm.elements.taxPercent.value = safeNum(s?.taxPercent);
   els.settingsForm.elements.currency.value = s?.currency || "USD";
-  els.settingsForm.elements.bizName.value = s?.bizName || "Repuesto PP & Asociado";
-  els.settingsForm.elements.bizPhone.value = s?.bizPhone || "(475) 279 1081";
+  els.settingsForm.elements.bizName.value = s?.bizName || "Asociado Auto Import LLC";
+  els.settingsForm.elements.bizPhone.value = s?.bizPhone || "475-279-1082";
   els.settingsForm.elements.bizRnc.value = s?.bizRnc || "";
-  els.settingsForm.elements.bizAddress.value = s?.bizAddress || "C. A &, Santiago de los Caballeros 51000, RD";
+  els.settingsForm.elements.bizAddress.value = s?.bizAddress || "17 Downs Street, Danbury, Connecticut 06810";
   els.settingsForm.elements.adminPin.value = s?.adminPin || "";
   openModal("modalSettings");
 }
@@ -1231,10 +1284,10 @@ async function saveSettings(e){
   await setSettings({
     taxPercent: Math.max(0, safeNum(raw.taxPercent)),
     currency: raw.currency || "USD",
-    bizName: (raw.bizName || "").trim() || "Repuesto PP & Asociado",
-    bizPhone: (raw.bizPhone || "").trim() || "(475) 279 1081",
+    bizName: (raw.bizName || "").trim() || "Asociado Auto Import LLC",
+    bizPhone: (raw.bizPhone || "").trim() || "475-279-1082",
     bizRnc: (raw.bizRnc || "").trim(),
-    bizAddress: (raw.bizAddress || "").trim() || "C. A &, Santiago de los Caballeros 51000, RD",
+    bizAddress: (raw.bizAddress || "").trim() || "17 Downs Street, Danbury, Connecticut 06810",
     adminPin: (raw.adminPin || "").trim() || current?.adminPin || ""
   });
 
@@ -1250,10 +1303,10 @@ async function resetSettings(){
   await setSettings({
     taxPercent: 0,
     currency: "USD",
-    bizName: "Repuesto PP & Asociado",
-    bizPhone: "(475) 279 1081",
+    bizName: "Asociado Auto Import LLC",
+    bizPhone: "475-279-1082",
     bizRnc: "",
-    bizAddress: "C. A &, Santiago de los Caballeros 51000, RD",
+    bizAddress: "17 Downs Street, Danbury, Connecticut 06810",
     adminPin: current?.adminPin || ""
   });
 
@@ -1474,7 +1527,7 @@ async function exportAll(isAuto=false){
   }
 
   const payload = {
-    app: "Repuesto PP & Asociado - Inventario",
+    app: "Asociado Auto Import LLC - Inventario",
     exportedAt: now(),
     settings,
     items: exportItems,
@@ -1556,8 +1609,9 @@ function openSingle(item){
   els.singleTitle.textContent = item.name || item.sku;
   els.singleSubtitle.textContent = `${item.sku}${item.oem ? ` • OEM: ${item.oem}` : ""} • ${item.brand} ${item.model} • ${yearsLabel(item.yearFrom, item.yearTo)}`;
 
-  if(item.photo){
-    els.singleMedia.innerHTML = `<img src="${URL.createObjectURL(item.photo)}" alt="">`;
+  const singleImg = item.photoUrl || (item.photo ? URL.createObjectURL(item.photo) : "");
+  if(singleImg){
+    els.singleMedia.innerHTML = `<img src="${escapeAttr(singleImg)}" alt="">`;
   }else{
     els.singleMedia.innerHTML = `<div class="muted">Sin foto</div>`;
   }
@@ -1571,7 +1625,7 @@ function openSingle(item){
     ["Ubicación", item.location || "—"],
     ["Estado", item.condition || "—"],
     ["Stock", String(safeNum(item.stock))],
-    ["Precio", money(item.price, JSON.parse(localStorage.getItem("rppa_settings") || "{}")?.currency || "USD")],
+    ["Precio", money(item.price, JSON.parse(localStorage.getItem("aai_settings") || "{}")?.currency || "USD")],
     ["OEM / Part Number", item.oem || "—"],
     ["Notas", item.notes || "—"]
   ];
@@ -1591,7 +1645,7 @@ function registerSW(){
   });
 }
 
-const META_KEY = "rppa_inv_meta";
+const META_KEY = "aai_inv_meta";
 
 function metaGet(){
   try{ return JSON.parse(localStorage.getItem(META_KEY) || "{}") || {}; }
@@ -1642,8 +1696,8 @@ function initInstallPrompt(){
 
   if(!box || !btnAction || !btnClose || !btnLater || !title || !text || !iosHelp) return;
 
-  const DISMISS_KEY = "rppa_install_prompt_dismissed";
-  const CLOSED_TODAY_KEY = "rppa_install_prompt_closed_date";
+  const DISMISS_KEY = "aai_install_prompt_dismissed";
+  const CLOSED_TODAY_KEY = "aai_install_prompt_closed_date";
 
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isInStandalone =
@@ -1743,4 +1797,13 @@ function initInstallPrompt(){
     showPrompt();
   }
 }
-init();
+
+
+if(typeof waitForInventoryAuth === "function"){
+  waitForInventoryAuth().then(()=>init()).catch((err)=>{
+    console.error(err);
+    alert("No se pudo iniciar la sesión del sistema.");
+  });
+}else{
+  alert("No se cargó Firebase Auth. Revisa firebase-storage.js y los scripts de index.html.");
+}
